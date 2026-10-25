@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AFK CV — Ressources & Modèles Auto-Mise à Jour</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 20px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { color: #0284c7; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }
+    .card { background: #fff; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .badge { background: #e0f2fe; color: #0284c7; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    footer { text-align: center; margin-top: 50px; color: #64748b; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>AFK CV Autonome</h1>
+    <p>Banque de ressources et modèles professionnels mise à jour automatiquement chaque jour.</p>
+    <p><b>Propulsé par AFK Création & Marketing</b></p>
+  </header>
+
+  <main class="grid" id="resourceGrid">
+    <p>Chargement des ressources...</p>
+  </main>
+
+  <footer>
+    <p>© 2026 AFK Création & Marketing. Tous droits réservés.</p>
+  </footer>
+
+  <script>
+    async function loadResources() {
+      try {
+        const res = await fetch('/api/resources');
+        const data = await res.json();
+        const grid = document.getElementById('resourceGrid');
+        grid.innerHTML = '';
+
+        if (data.length === 0) {
+          grid.innerHTML = '<p>Aucune ressource pour le moment. L\'Autobot prépare le premier lot !</p>';
+          return;
+        }
+
+        data.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <span class="badge">${item.category.toUpperCase()}</span>
+            <h3>${item.title}</h3>
+            <p>${item.description || ''}</p>
+            <small>Ajouté le : ${new Date(item.created_at).toLocaleDateString('fr-FR')}</small>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    window.onload = loadResources;
+  </script>
+</body>
+</html>
