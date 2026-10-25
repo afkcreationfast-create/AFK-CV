@@ -12,27 +12,43 @@ const apiKeys = [
   process.env.GROQ_API_KEY_SECONDARY
 ].filter(Boolean);
 
+// Liste des modèles à tester (Qwen en priorité, puis alternatives actives)
+const modelsToTry = [
+  'qwen/qwen3.8-27b',
+  'qwen-2.5-32b',
+  'llama-3.1-8b-instant'
+];
+
 async function fetchWithFallback(promptSystem, promptUser) {
   let lastError = null;
 
-  for (let i = 0; i < apiKeys.length; i++) {
-    try {
-      const groq = new Groq({ apiKey: apiKeys[i] });
-      const completion = await groq.chat.completions.create({
-        messages: [
-          { role: 'system', content: promptSystem },
-          { role: 'user', content: promptUser }
-        ],
-        model: 'llama-3.3-70b-versatile',
-        response_format: { type: 'json_object' }
-      });
-      return JSON.parse(completion.choices[0].message.content);
-    } catch (err) {
-      console.warn(`[AUTOBOT] Clé API #${i + 1} indisponible. Tentative suivante...`);
-      lastError = err;
+  for (let k = 0; k < apiKeys.length; k++) {
+    const groq = new Groq({ apiKey: apiKeys[k] });
+
+    for (let m = 0; m < modelsToTry.length; m++) {
+      try {
+        const completion = await groq.chat.completions.create({
+          messages: [
+            { role: 'system', content: promptSystem },
+            { role: 'user', content: promptUser }
+          ],
+          model: modelsToTry[m],
+          response_format: { type: 'json_object' }
+        });
+        return JSON.parse(completion.choices[0].message.content);
+      } catch (err) {
+        lastError = err;
+        // Si le modèle n'existe pas (404), on passe directement au modèle suivant
+        if (err.status === 404 || err.message?.includes('does not exist')) {
+          continue;
+        }
+        // Sinon (erreur de clé ou quota), on prévient et on continue la boucle
+        console.warn(`[AUTOBOT] Erreur avec le modèle ${modelsToTry[m]} : ${err.message}`);
+      }
     }
   }
-  throw new Error(`Toutes les clés d'API ont échoué : ${lastError?.message}`);
+
+  throw new Error(`Toutes les clés et modèles ont échoué : ${lastError?.message}`);
 }
 
 async function generateBatchResources() {
